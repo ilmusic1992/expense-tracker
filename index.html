@@ -155,6 +155,32 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
 /* TOAST */
+
+/* YEAR SCREEN */
+.year-month-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:.5px solid var(--brd)}
+.year-month-row:last-child{border-bottom:none}
+.ym-name{font-size:13px;min-width:60px}
+.ym-bar-wrap{flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
+.ym-bar{height:100%;border-radius:3px;background:var(--red)}
+.ym-amt{font-size:13px;font-weight:600;min-width:70px;text-align:left;color:var(--red)}
+.ym-inc{font-size:11px;color:var(--acc);min-width:60px;text-align:left}
+.year-nav{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.year-lbl{font-size:16px;font-weight:700;flex:1;text-align:center}
+
+/* SETTINGS SCREEN */
+.settings-cat-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--s2);border-radius:10px;border:.5px solid var(--brd);margin-bottom:6px}
+.settings-cat-icon{font-size:20px;width:32px;text-align:center;flex-shrink:0}
+.settings-cat-name{flex:1;font-size:13px;font-weight:500}
+.settings-cat-color{width:16px;height:16px;border-radius:50%;flex-shrink:0;border:1.5px solid rgba(255,255,255,.2)}
+.btn-del-cat{background:rgba(242,92,92,.1);border:.5px solid rgba(242,92,92,.3);color:var(--red);border-radius:6px;padding:3px 9px;font-size:11px;cursor:pointer}
+.add-cat-form{background:var(--s2);border:.5px solid var(--brd);border-radius:12px;padding:14px;margin-bottom:12px}
+.emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-top:8px;max-height:120px;overflow-y:auto}
+.emoji-btn{font-size:20px;background:var(--s3);border:none;border-radius:6px;padding:4px;cursor:pointer;text-align:center}
+.emoji-btn.sel{background:var(--s4);border:.5px solid var(--acc)}
+.color-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.color-btn{width:24px;height:24px;border-radius:50%;border:2px solid transparent;cursor:pointer;flex-shrink:0}
+.color-btn.sel{border-color:white}
+
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--s3);color:var(--text);border:.5px solid var(--brd2);border-radius:20px;padding:8px 18px;font-size:13px;z-index:999;opacity:0;transition:opacity .25s;white-space:nowrap;pointer-events:none}
 .toast.show{opacity:1}
 
@@ -290,6 +316,56 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
       <div class="sync-badge"><div class="sync-dot" id="syncDot"></div><span id="syncLbl">מחובר</span></div>
     </div>
 
+
+    <!-- YEAR -->
+    <div class="screen" id="screen-year">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <button class="mnbtn" onclick="changeYear(-1)">‹</button>
+        <span class="year-lbl" id="yearLbl">2026</span>
+        <button class="mnbtn" onclick="changeYear(1)">›</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px" id="yearKpi"></div>
+      <div class="card">
+        <div class="card-title">הוצאות לפי חודש</div>
+        <svg id="yearBarSvg" width="100%" height="160" viewBox="0 0 320 160" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="card">
+        <div class="card-title">פירוט חודשי</div>
+        <div id="yearMonthList"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">לפי קטגוריה – כל השנה</div>
+        <div id="yearCatList"></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="screen" id="screen-settings">
+      <div class="card">
+        <div class="card-title">➕ הוספת קטגוריה חדשה</div>
+        <div class="add-cat-form" style="padding:0;background:transparent;border:none">
+          <div class="fg2">
+            <div class="fl"><label>שם קטגוריה</label><input id="newCatName" placeholder='לדוג׳: חיות מחמד'></div>
+            <div class="fl"><label>אייקון נבחר</label><input id="newCatIcon" placeholder="🐶" style="font-size:18px;text-align:center" maxlength="2" readonly></div>
+          </div>
+          <div class="fl" style="margin-bottom:8px">
+            <label>בחר אייקון</label>
+            <div class="emoji-grid" id="emojiGrid"></div>
+          </div>
+          <div class="fl" style="margin-bottom:10px">
+            <label>בחר צבע</label>
+            <div class="color-grid" id="colorGrid"></div>
+          </div>
+          <input type="hidden" id="newCatColor" value="#6B7A99">
+          <button class="btn-primary" onclick="addCategory()">הוסף קטגוריה</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">קטגוריות קיימות</div>
+        <div id="settingsCatList"></div>
+      </div>
+    </div>
+
   </div><!-- /content -->
 
   <!-- NAV -->
@@ -297,17 +373,20 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
     <button class="navbtn active" onclick="switchTab('cat',this)">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l5 3"/></svg>קטגוריות
     </button>
-    <button class="navbtn" onclick="switchTab('ov',this)">
-      <svg viewBox="0 0 24 24"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>סקירה
-    </button>
     <button class="navbtn" onclick="switchTab('tx',this)">
       <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>עסקאות
     </button>
-    <button class="navbtn" onclick="switchTab('pace',this)">
-      <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><path d="M12 6v6l4 2"/></svg>קצב
+    <button class="navbtn" onclick="switchTab('ov',this)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>סקירה
+    </button>
+    <button class="navbtn" onclick="switchTab('year',this)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>שנתי
     </button>
     <button class="navbtn" onclick="switchTab('imp',this)">
       <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>נתונים
+    </button>
+    <button class="navbtn" onclick="switchTab('settings',this)">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>הגדרות
     </button>
   </nav>
 </div>
@@ -441,11 +520,13 @@ function switchTab(tab, btn) {
 }
 function renderActive() {
   updateTopbar();
-  if(activeTab==='cat') renderCat();
-  if(activeTab==='ov')  renderOv();
-  if(activeTab==='tx')  renderTx();
-  if(activeTab==='pace')renderPace();
-  if(activeTab==='imp') renderSrcs();
+  if(activeTab==='cat')      renderCat();
+  if(activeTab==='ov')       renderOv();
+  if(activeTab==='tx')       renderTx();
+  if(activeTab==='pace')     renderPace();
+  if(activeTab==='imp')      renderSrcs();
+  if(activeTab==='year')     renderYear();
+  if(activeTab==='settings') renderSettings();
 }
 
 // ── Topbar ─────────────────────────────────────────────────────────────────
@@ -869,6 +950,150 @@ function exportCSV() {
   a.download=`הוצאות_${MONTHS[curM]}_${curY}.csv`;a.click();
 }
 
+
+// ── Year Screen ────────────────────────────────────────────────────────────
+let curYearView = new Date().getFullYear();
+
+function changeYear(d) {
+  curYearView += d;
+  document.getElementById('yearLbl').textContent = curYearView;
+  renderYear();
+}
+
+function renderYear() {
+  document.getElementById('yearLbl').textContent = curYearView;
+  const yearTxs = txs.filter(t => new Date(t.date).getFullYear() === curYearView);
+  const expAll = getExp(yearTxs), incAll = getInc(yearTxs);
+  const totalExp = sum(expAll), totalInc = sum(incAll);
+
+  document.getElementById('yearKpi').innerHTML = [
+    ['סה"כ הוצאות', fmt(totalExp), 'var(--red)'],
+    ['סה"כ הכנסות', fmt(totalInc), 'var(--acc)'],
+    ['יתרה', fmt(totalInc - totalExp), totalInc>=totalExp?'var(--blue)':'var(--red)'],
+  ].map(([l,v,col])=>`<div class="card" style="margin:0;padding:10px 12px;text-align:center">
+    <div style="font-size:9px;color:var(--muted);margin-bottom:3px">${l}</div>
+    <div style="font-size:14px;font-weight:700;color:${col}">${v}</div>
+  </div>`).join('');
+
+  // monthly breakdown
+  const monthExps = Array.from({length:12},(_,m)=>{
+    const md = txs.filter(t=>{const d=new Date(t.date);return d.getMonth()===m&&d.getFullYear()===curYearView;});
+    return {exp:sum(getExp(md)), inc:sum(getInc(md))};
+  });
+  const maxV = Math.max(...monthExps.map(m=>Math.max(m.exp,m.inc)),1);
+  const W=320,H=140,bw=10,gap=W/12;
+  let bars='';
+  monthExps.forEach((m,i)=>{
+    const x=i*gap+gap/2;
+    const eH=m.exp/maxV*(H-20), iH=m.inc/maxV*(H-20);
+    bars+=`<rect x="${x-bw-1}" y="${H-20-iH}" width="${bw}" height="${iH}" rx="2" fill="rgba(0,212,168,.5)"/>`;
+    bars+=`<rect x="${x+1}" y="${H-20-eH}" width="${bw}" height="${eH}" rx="2" fill="${i===curM&&curYearView===curY?'#F25C5C':'rgba(242,92,92,.5)'}"/>`;
+    bars+=`<text x="${x}" y="${H-4}" text-anchor="middle" fill="#6B7A99" font-size="8">${MONTHS[i].slice(0,3)}</text>`;
+  });
+  document.getElementById('yearBarSvg').innerHTML = bars;
+
+  // monthly list
+  document.getElementById('yearMonthList').innerHTML = monthExps.map((m,i)=>{
+    if(!m.exp && !m.inc) return '';
+    const pct = Math.round(m.exp/maxV*100);
+    return `<div class="year-month-row" onclick="jumpToMonth(${i})">
+      <span class="ym-name" style="cursor:pointer;color:${i===curM&&curYearView===curY?'var(--acc)':'var(--text)'}">${MONTHS[i]}</span>
+      <div class="ym-bar-wrap"><div class="ym-bar" style="width:${pct}%"></div></div>
+      <span class="ym-amt">${fmt(m.exp)}</span>
+      <span class="ym-inc">+${fmt(m.inc)}</span>
+    </div>`;
+  }).join('');
+
+  // yearly cat breakdown
+  const catTotals={};
+  expAll.forEach(t=>{catTotals[t.cat]=(catTotals[t.cat]||0)+t.amount;});
+  const sorted=Object.entries(catTotals).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('yearCatList').innerHTML = sorted.map(([cat,v])=>`
+    <div class="trend-item">
+      <div class="trend-ico" style="background:${CAT[cat]?.color||'#6B7A99'}22">${CAT[cat]?.icon||'📌'}</div>
+      <div class="trend-info">
+        <div class="trend-name">${cat}</div>
+        <div class="trend-sub">${Math.round(v/totalExp*100)}% מסך השנה</div>
+        <div class="trend-bar-wrap"><div class="trend-bar" style="width:${Math.round(v/totalExp*100)}%;background:${CAT[cat]?.color||'#6B7A99'}"></div></div>
+      </div>
+      <div class="trend-amt">${fmt(v)}</div>
+    </div>`).join('') || '<div class="empty">אין נתונים לשנה זו</div>';
+}
+
+function jumpToMonth(m) {
+  curM = m; curY = curYearView;
+  updateMonthLbl();
+  switchTab('cat', document.querySelectorAll('.navbtn')[0]);
+}
+
+// ── Settings Screen ────────────────────────────────────────────────────────
+const EMOJIS = ['🏠','🛒','🚗','⛽','❤️','🛡️','📱','🔄','🎬','👗','📚','📈','🚨','💰','📌','🐶','🐱','✈️','🏋️','🎮','🍕','☕','👶','💊','🏦','🎓','💇','🛁','🌿','🎵','🎁','📦','🏪','🔧','⚽','🎭','🍷','🚿','🧹','💡'];
+const COLORS = ['#4F8EF7','#00D4A8','#F5A623','#FF6B35','#34D399','#9B7FEA','#06B6D4','#818CF8','#E879A0','#FB923C','#84CC16','#00C896','#F87171','#F25C5C','#6B7A99','#FBBF24','#A78BFA','#34D399','#60A5FA','#F472B6'];
+
+let selectedEmoji = '📌';
+let selectedColor = '#6B7A99';
+const CATS_COL = db.collection('categories');
+
+function renderSettings() {
+  // emoji picker
+  document.getElementById('emojiGrid').innerHTML = EMOJIS.map(e=>
+    `<button class="emoji-btn ${e===selectedEmoji?'sel':''}" onclick="selectEmoji('${e}')">${e}</button>`).join('');
+  // color picker
+  document.getElementById('colorGrid').innerHTML = COLORS.map(col=>
+    `<div class="color-btn ${col===selectedColor?'sel':''}" style="background:${col}" onclick="selectColor('${col}')"></div>`).join('');
+
+  // cat list
+  document.getElementById('settingsCatList').innerHTML = Object.entries(CAT).map(([name,cfg])=>`
+    <div class="settings-cat-item">
+      <div class="settings-cat-icon">${cfg.icon}</div>
+      <div class="settings-cat-name">${name}</div>
+      <div class="settings-cat-color" style="background:${cfg.color}"></div>
+      <button class="btn-del-cat" onclick="deleteCategory('${name}')">מחק</button>
+    </div>`).join('');
+}
+
+function selectEmoji(e) {
+  selectedEmoji = e;
+  document.getElementById('newCatIcon').value = e;
+  document.getElementById('emojiGrid').innerHTML = EMOJIS.map(em=>
+    `<button class="emoji-btn ${em===e?'sel':''}" onclick="selectEmoji('${em}')">${em}</button>`).join('');
+}
+
+function selectColor(col) {
+  selectedColor = col;
+  document.getElementById('newCatColor').value = col;
+  document.getElementById('colorGrid').innerHTML = COLORS.map(c=>
+    `<div class="color-btn ${c===col?'sel':''}" style="background:${c}" onclick="selectColor('${c}')"></div>`).join('');
+}
+
+async function addCategory() {
+  const name = document.getElementById('newCatName').value.trim();
+  const icon = selectedEmoji;
+  const color = selectedColor;
+  if (!name) { toast('שם קטגוריה חסר'); return; }
+  if (CAT[name]) { toast('קטגוריה כבר קיימת'); return; }
+  CAT[name] = {color, icon};
+  // persist to Firestore
+  await CATS_COL.doc(name).set({color, icon});
+  document.getElementById('newCatName').value = '';
+  renderSettings();
+  // refresh cat selects everywhere
+  populateCatSelect('mCat');
+  toast(`✓ קטגוריה "${name}" נוספה`);
+}
+
+async function deleteCategory(name) {
+  const builtin = ['שכירות','מזון וסופר','רכב','דלק','בריאות','ביטוח','תקשורת','מינויים','בידור','לבוש','חינוך','מסחר','הוצאות מיותרות','חיסכון','אחר'];
+  if (builtin.includes(name)) { toast('לא ניתן למחוק קטגוריה מובנית'); return; }
+  if (!confirm(`למחוק את הקטגוריה "${name}"?`)) return;
+  delete CAT[name];
+  await CATS_COL.doc(name).delete();
+  renderSettings();
+  populateCatSelect('mCat');
+  toast(`קטגוריה "${name}" נמחקה`);
+}
+
+
 // ── Firestore Listeners ────────────────────────────────────────────────────
 function startListeners() {
   unsubTxs = TXS.onSnapshot(snap=>{
@@ -888,6 +1113,9 @@ async function init() {
     // load rules
     const rSnap = await RULES.get();
     rSnap.docs.forEach(d=>{ rules[d.id]=d.data().cat; });
+    // load custom categories
+    const cSnap = await db.collection('categories').get();
+    cSnap.docs.forEach(d=>{ CAT[d.id]={...d.data()}; });
     startListeners();
     document.getElementById('loader').style.display='none';
     document.getElementById('app').style.display='flex';
