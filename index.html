@@ -8,8 +8,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="הוצאות">
 <title>מעקב הוצאות</title>
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -432,7 +432,7 @@ const CAT = {
   'חיסכון':         {color:'#34D399', icon:'💰'},
   'אחר':            {color:'#6B7A99', icon:'📌'},
 };
-const CAT_KEYS = Object.keys(CAT);
+const getCatKeys = () => Object.keys(CAT);
 
 const MAX_CAT_MAP = {
   'מזון וצריכה':'מזון וסופר','מסעדות, קפה וברים':'מזון וסופר',
@@ -493,7 +493,7 @@ function sum(arr) { return arr.reduce((s,t)=>s+t.amount,0); }
 function populateCatSelect(id, val='אחר') {
   const el = document.getElementById(id);
   if (!el) return;
-  el.innerHTML = CAT_KEYS.map(c=>`<option value="${c}" ${c===val?'selected':''}>${CAT[c].icon} ${c}</option>`).join('');
+  el.innerHTML = getCatKeys().map(c=>`<option value="${c}" ${c===val?'selected':''}>${CAT[c].icon} ${c}</option>`).join('');
 }
 populateCatSelect('mCat');
 
@@ -580,7 +580,7 @@ function renderCat() {
     `<div class="leg"><div class="leg-sq" style="background:${CAT[c]?.color||'#6B7A99'}"></div>${c}</div>`).join('');
 
   // grid
-  document.getElementById('catGrid').innerHTML = CAT_KEYS.map(c=>{
+  document.getElementById('catGrid').innerHTML = getCatKeys().map(c=>{
     const v=catTotals[c]||0, pct=total?Math.round(v/total*100):0;
     return `<div class="cat-cell" style="border-color:${v?(CAT[c].color+'44'):'var(--brd)'};opacity:${v?1:.45}" onclick="filterBycat('${c}')">
       <div class="cat-icon">${CAT[c].icon}</div>
@@ -686,9 +686,9 @@ function renderTx() {
               <div class="tx-name">${esc(t.desc)} ${t.refund?'<span class="tag-refund">↩ החזר</span>':''}</div>
               <div class="tx-meta">
                 <select class="cat-select" style="color:${CAT[t.cat]?.color||'var(--acc)'}" onchange="updateCat('${t.id}',this.value,false)">
-                  ${CAT_KEYS.map(ck=>`<option value="${ck}" ${ck===t.cat?'selected':''}>${CAT[ck].icon} ${ck}</option>`).join('')}
+                  ${getCatKeys().map(ck=>`<option value="${ck}" ${ck===t.cat?'selected':''}>${CAT[ck].icon} ${ck}</option>`).join('')}
                 </select>
-                <button class="btn-xs btn-remember" onclick="updateCat('${t.id}','${t.cat}',true)">✓ לכולם</button>
+                <button class="btn-xs btn-remember" onclick="updateCat('${t.id}',this.previousElementSibling.value,true)">✓ לכולם</button>
                 <button class="btn-xs btn-refund ${t.refund?'active':''}" onclick="toggleRefund('${t.id}')">↩ החזר</button>
                 <span class="tag-src">${esc(t.source||'ידני')}</span>
               </div>
@@ -786,25 +786,40 @@ async function toggleRefund(id) {
 }
 
 async function updateCat(id, newCat, applyAll) {
+  if(!newCat) return;
   const tx = txs.find(t=>t.id===id);
   if(!tx) return;
-  const key = tx.desc.trim().toLowerCase().slice(0,30);
+  const descKey = tx.desc.trim().toLowerCase().slice(0,30);
+
   if(applyAll) {
-    // update all txs with same desc
-    const batch = db.batch();
-    const matching = txs.filter(t=>t.desc.trim().toLowerCase().slice(0,30)===key);
-    matching.forEach(t=>{ batch.update(TXS.doc(t.id),{cat:newCat}); t.cat=newCat; });
-    await batch.commit();
-    // save rule
-    await RULES.doc(key).set({cat:newCat});
-    rules[key] = newCat;
+    // find ALL transactions with same desc across all months
+    const matching = txs.filter(t=>t.desc.trim().toLowerCase().slice(0,30)===descKey);
+    if(!matching.length) return;
+
+    // update in Firestore in chunks of 400 (batch limit)
+    const CHUNK = 400;
+    for(let i=0; i<matching.length; i+=CHUNK) {
+      const batch = db.batch();
+      matching.slice(i, i+CHUNK).forEach(t=>{
+        batch.update(TXS.doc(t.id), {cat: newCat});
+        t.cat = newCat; // update local state immediately
+      });
+      await batch.commit();
+    }
+
+    // save rule for future imports
+    await RULES.doc(descKey).set({cat: newCat});
+    rules[descKey] = newCat;
     toast(`✓ עודכנו ${matching.length} עסקאות + נשמר לעתיד`);
   } else {
-    await TXS.doc(id).update({cat:newCat});
+    await TXS.doc(id).update({cat: newCat});
     tx.cat = newCat;
-    toast('קטגוריה עודכנה');
+    toast('✓ קטגוריה עודכנה');
   }
+
+  // re-render all relevant screens
   renderTx(); renderCat(); renderOv();
+  if(activeTab==='year') renderYear();
 }
 
 async function deleteSrc(fileId, name, count) {
@@ -1077,8 +1092,9 @@ async function addCategory() {
   await CATS_COL.doc(name).set({color, icon});
   document.getElementById('newCatName').value = '';
   renderSettings();
-  // refresh cat selects everywhere
   populateCatSelect('mCat');
+  // re-render all screens so new cat appears everywhere
+  renderCat(); renderOv(); if(activeTab==='tx') renderTx();
   toast(`✓ קטגוריה "${name}" נוספה`);
 }
 
@@ -1090,6 +1106,7 @@ async function deleteCategory(name) {
   await CATS_COL.doc(name).delete();
   renderSettings();
   populateCatSelect('mCat');
+  renderCat(); renderOv(); if(activeTab==='tx') renderTx();
   toast(`קטגוריה "${name}" נמחקה`);
 }
 
