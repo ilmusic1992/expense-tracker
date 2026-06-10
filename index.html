@@ -43,7 +43,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 
 /* NAV */
 .nav{position:absolute;bottom:0;left:0;right:0;background:var(--s1);border-top:.5px solid var(--brd);display:flex;padding-bottom:max(8px,env(safe-area-inset-bottom));z-index:100}
-.navbtn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 0 4px;background:transparent;border:none;cursor:pointer;color:var(--muted);gap:2px;font-size:9px;touch-action:manipulation;transition:color .15s}
+.navbtn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7px 0 3px;background:transparent;border:none;cursor:pointer;color:var(--muted);gap:1px;font-size:8px;touch-action:manipulation;transition:color .15s}
 .navbtn.active{color:var(--acc)}
 .navbtn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
@@ -155,6 +155,17 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
 /* TOAST */
+
+/* SUMMARY SCREEN */
+.savings-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.savings-label{font-size:13px;min-width:110px;display:flex;align-items:center;gap:6px}
+.savings-input{flex:1;background:var(--s3);border:.5px solid var(--brd);color:var(--text);border-radius:7px;padding:7px 9px;font-size:13px;outline:none;direction:rtl;text-align:right}
+.savings-input:focus{border-color:var(--acc)}
+.summary-hist-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid var(--brd)}
+.summary-hist-item:last-child{border-bottom:none}
+.sub-cat-row{display:flex;align-items:center;gap:10px;padding:6px 0 6px 12px;border-right:2px solid var(--brd2);margin-right:8px;margin-bottom:4px}
+.sub-cat-name{flex:1;font-size:12px;color:var(--muted2)}
+.sub-cat-amt{font-size:12px;font-weight:600;color:var(--red)}
 
 /* YEAR SCREEN */
 .year-month-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:.5px solid var(--brd)}
@@ -292,17 +303,43 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 
       <div class="man-form">
         <div class="man-form-title">➕ הוספה ידנית</div>
-        <div class="fg2">
+
+        <!-- Type toggle -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">
+          <button id="btnExpense" onclick="setManType('expense')"
+            style="padding:9px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:.5px solid var(--red);background:rgba(242,92,92,.15);color:var(--red)">
+            💸 הוצאה
+          </button>
+          <button id="btnIncome" onclick="setManType('income')"
+            style="padding:9px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:.5px solid var(--brd);background:transparent;color:var(--muted2)">
+            💰 הכנסה
+          </button>
+        </div>
+
+        <input type="hidden" id="mType" value="expense">
+
+        <div class="fg2" style="margin-bottom:8px">
           <div class="fl"><label>תיאור</label><input id="mDesc" placeholder="שכר דירה..."></div>
           <div class="fl"><label>סכום ₪</label><input type="number" id="mAmt" placeholder="0" min="0"></div>
         </div>
-        <div class="fg3">
-          <div class="fl"><label>קטגוריה</label><select id="mCat" style="direction:rtl"></select></div>
+        <div class="fg2" style="margin-bottom:10px">
+          <div class="fl"><label id="mCatLabel">קטגוריה</label>
+            <select id="mCat" style="direction:rtl"></select>
+          </div>
           <div class="fl"><label>תאריך</label><input type="date" id="mDate"></div>
-          <div class="fl"><label>סוג</label>
-            <select id="mType">
-              <option value="expense">הוצאה</option>
-              <option value="income">הכנסה</option>
+        </div>
+        <!-- Income source field (shown only for income) -->
+        <div id="mIncomeSourceRow" style="display:none;margin-bottom:10px">
+          <div class="fl"><label>מקור הכנסה</label>
+            <select id="mIncomeSource" style="direction:rtl">
+              <option value="משכורת">💼 משכורת</option>
+              <option value="פרילנס">🖥️ פרילנס</option>
+              <option value="השקעות">📈 השקעות</option>
+              <option value="החזר">↩️ החזר</option>
+              <option value="החזר הלוואה">💳 החזר הלוואה</option>
+              <option value="מתנה">🎁 מתנה</option>
+              <option value="שכירות נכס">🏠 שכירות נכס</option>
+              <option value="אחר">📌 אחר</option>
             </select>
           </div>
         </div>
@@ -316,6 +353,23 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
       <div class="sync-badge"><div class="sync-dot" id="syncDot"></div><span id="syncLbl">מחובר</span></div>
     </div>
 
+
+    <!-- MONTHLY SUMMARY -->
+    <div class="screen" id="screen-summary">
+      <div class="card">
+        <div class="card-title">📊 סיכום חודשי – <span id="summaryMonthLbl"></span></div>
+        <div id="summaryKpi" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">💰 יעדי חיסכון והשקעה</div>
+        <div id="savingsRows"></div>
+        <button class="btn-primary" style="width:100%;margin-top:10px" onclick="saveSummary()">שמור סיכום</button>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 היסטוריית סיכומים</div>
+        <div id="summaryHistory"></div>
+      </div>
+    </div>
 
     <!-- YEAR -->
     <div class="screen" id="screen-year">
@@ -382,6 +436,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
     <button class="navbtn" onclick="switchTab('year',this)">
       <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>שנתי
     </button>
+    <button class="navbtn" onclick="switchTab('summary',this)">
+      <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>סיכום
+    </button>
     <button class="navbtn" onclick="switchTab('imp',this)">
       <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>נתונים
     </button>
@@ -430,9 +487,33 @@ const CAT = {
   'מסחר':           {color:'#00C896', icon:'📈'},
   'הוצאות מיותרות': {color:'#F87171', icon:'🚨'},
   'חיסכון':         {color:'#34D399', icon:'💰'},
+  'פנסיה וגמל':     {color:'#2DD4BF', icon:'🏦'},
+  'החזר הלוואה':    {color:'#F43F5E', icon:'💳'},
   'אחר':            {color:'#6B7A99', icon:'📌'},
 };
+
+// sub-categories – displayed under parent in dashboard
+const SUB_CATS = {
+  'חשמל':   'שכירות',
+  'מים':    'שכירות',
+  'ארנונה': 'שכירות',
+  'גז':     'שכירות',
+};
+const PARENT_CAT = {
+  'שכירות': ['שכר דירה', 'חשמל', 'מים', 'ארנונה', 'גז'],
+};
 const getCatKeys = () => Object.keys(CAT);
+
+// Sub-category display names (shown under parent)
+const SUB_CAT_CFG = {
+  'שכר דירה': {color:'#4F8EF7', icon:'🏠', parent:'שכירות'},
+  'חשמל':     {color:'#FCD34D', icon:'⚡', parent:'שכירות'},
+  'מים':      {color:'#60A5FA', icon:'💧', parent:'שכירות'},
+  'ארנונה':   {color:'#A78BFA', icon:'🏛️', parent:'שכירות'},
+  'גז':       {color:'#FB923C', icon:'🔥', parent:'שכירות'},
+};
+// Merge sub-cats into CAT for dropdowns
+Object.assign(CAT, SUB_CAT_CFG);
 
 const MAX_CAT_MAP = {
   'מזון וצריכה':'מזון וסופר','מסעדות, קפה וברים':'מזון וסופר',
@@ -526,6 +607,7 @@ function renderActive() {
   if(activeTab==='pace')     renderPace();
   if(activeTab==='imp')      renderSrcs();
   if(activeTab==='year')     renderYear();
+  if(activeTab==='summary')  renderSummary();
   if(activeTab==='settings') renderSettings();
 }
 
@@ -838,15 +920,38 @@ async function deleteSrc(fileId, name, count) {
   toast(`נמחקו ${snap.docs.length} עסקאות`);
 }
 
+function setManType(type) {
+  document.getElementById('mType').value = type;
+  const btnExp = document.getElementById('btnExpense');
+  const btnInc = document.getElementById('btnIncome');
+  const catRow = document.getElementById('mCatLabel').parentElement.parentElement;
+  const incRow = document.getElementById('mIncomeSourceRow');
+  if(type === 'expense') {
+    btnExp.style.cssText = 'padding:9px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:.5px solid var(--red);background:rgba(242,92,92,.15);color:var(--red)';
+    btnInc.style.cssText = 'padding:9px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:.5px solid var(--brd);background:transparent;color:var(--muted2)';
+    catRow.style.display = '';
+    incRow.style.display = 'none';
+  } else {
+    btnInc.style.cssText = 'padding:9px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:.5px solid var(--acc);background:rgba(0,212,168,.15);color:var(--acc)';
+    btnExp.style.cssText = 'padding:9px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:.5px solid var(--brd);background:transparent;color:var(--muted2)';
+    catRow.style.display = 'none';
+    incRow.style.display = '';
+  }
+}
+
 async function saveManual() {
   const desc = document.getElementById('mDesc').value.trim();
   const amount = parseFloat(document.getElementById('mAmt').value);
   if(!desc||!amount) return;
+  const type = document.getElementById('mType').value;
+  const cat = type === 'income'
+    ? document.getElementById('mIncomeSource').value
+    : document.getElementById('mCat').value;
   const t = {
     desc, amount,
     date: document.getElementById('mDate').value || new Date().toISOString().split('T')[0],
-    type: document.getElementById('mType').value,
-    cat:  document.getElementById('mCat').value,
+    type,
+    cat,
     source:'ידני', fileId:'manual', refund:false,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   };
@@ -864,6 +969,7 @@ function clearManual() {
   document.getElementById('mAmt').value='';
   document.getElementById('mDate').value=new Date().toISOString().split('T')[0];
   populateCatSelect('mCat');
+  setManType('expense');
 }
 
 // ── File Import ────────────────────────────────────────────────────────────
@@ -1110,6 +1216,116 @@ async function deleteCategory(name) {
   toast(`קטגוריה "${name}" נמחקה`);
 }
 
+
+// ── Monthly Summary ────────────────────────────────────────────────────────
+const SUMMARY_COL = db.collection('monthly_summaries');
+const SAVINGS_FIELDS = [
+  {id:'remaining',  label:'נשאר בחשבון',    icon:'💵', color:'var(--acc)'},
+  {id:'savings',    label:'חיסכון',          icon:'💰', color:'#34D399'},
+  {id:'pension',    label:'פנסיה / גמל',     icon:'🏦', color:'#2DD4BF'},
+  {id:'investment', label:'השקעות',          icon:'📈', color:'var(--blue)'},
+  {id:'loan',       label:'החזר הלוואה',     icon:'💳', color:'#F43F5E'},
+  {id:'other_save', label:'אחר',             icon:'📌', color:'var(--muted2)'},
+];
+
+function renderSummary() {
+  const lbl = MONTHS[curM] + ' ' + curY;
+  document.getElementById('summaryMonthLbl').textContent = lbl;
+
+  // KPI
+  const cur = getCur();
+  const exp = sum(getExp(cur)), inc = sum(getInc(cur));
+  document.getElementById('summaryKpi').innerHTML = [
+    ['הכנסות',  fmt(inc),       'var(--acc)'],
+    ['הוצאות',  fmt(exp),       'var(--red)'],
+    ['יתרה',    fmt(inc - exp), inc>=exp?'var(--blue)':'var(--red)'],
+    ['עסקאות',  getExp(cur).length, 'var(--purple)'],
+  ].map(([l,v,col])=>`<div class="card" style="margin:0;padding:10px 12px;text-align:center">
+    <div style="font-size:10px;color:var(--muted);margin-bottom:3px">${l}</div>
+    <div style="font-size:15px;font-weight:600;color:${col}">${v}</div>
+  </div>`).join('');
+
+  // Load current month doc → fill inputs
+  const docId = curY + '_' + String(curM+1).padStart(2,'0');
+  SUMMARY_COL.doc(docId).get().then(doc=>{
+    const saved = doc.exists ? doc.data() : {};
+    document.getElementById('savingsRows').innerHTML = SAVINGS_FIELDS.map(f=>`
+      <div class="savings-row">
+        <div class="savings-label" style="color:${f.color}">${f.icon} ${f.label}</div>
+        <input class="savings-input" id="sf_${f.id}" type="number" placeholder="0"
+          value="${saved[f.id]||''}" min="0">
+        <span style="font-size:12px;color:var(--muted)">₪</span>
+      </div>`).join('');
+  }).catch(err=>{
+    console.error('load summary:', err);
+    document.getElementById('savingsRows').innerHTML = SAVINGS_FIELDS.map(f=>`
+      <div class="savings-row">
+        <div class="savings-label" style="color:${f.color}">${f.icon} ${f.label}</div>
+        <input class="savings-input" id="sf_${f.id}" type="number" placeholder="0" min="0">
+        <span style="font-size:12px;color:var(--muted)">₪</span>
+      </div>`).join('');
+  });
+
+  // History – get ALL docs, sort client-side (no index needed)
+  const histEl = document.getElementById('summaryHistory');
+  histEl.innerHTML = '<div class="empty" style="color:var(--muted)">טוען...</div>';
+  SUMMARY_COL.get().then(snap=>{
+    if(!snap || snap.empty){
+      histEl.innerHTML='<div class="empty">אין סיכומים עדיין</div>';
+      return;
+    }
+    // Sort by docId descending (format: YYYY_MM → lexicographic = chronological)
+    const docs = snap.docs
+      .map(d=>({id:d.id, ...d.data()}))
+      .filter(d=>d.id && d.id.includes('_'))
+      .sort((a,b)=>b.id.localeCompare(a.id));
+
+    histEl.innerHTML = docs.map(d=>{
+      const parts = d.id.split('_');
+      const mIdx = parseInt(parts[1]) - 1;
+      const mName = (MONTHS[mIdx]||'?') + ' ' + (parts[0]||'');
+      const totalSaved = (d.remaining||0)+(d.savings||0)+(d.pension||0)+(d.investment||0);
+      const isCurrentMonth = d.id === docId;
+      return `<div class="summary-hist-item" style="${isCurrentMonth?'background:rgba(0,212,168,0.06);border-radius:8px;padding:8px;':''}">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600;color:${isCurrentMonth?'var(--acc)':'var(--text)'}">${mName}${isCurrentMonth?' ◀':''}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:3px;display:flex;flex-wrap:wrap;gap:8px">
+            ${d.remaining?`<span>💵 ${fmt(d.remaining)}</span>`:''}
+            ${d.savings?`<span>💰 ${fmt(d.savings)}</span>`:''}
+            ${d.pension?`<span>🏦 ${fmt(d.pension)}</span>`:''}
+            ${d.investment?`<span>📈 ${fmt(d.investment)}</span>`:''}
+            ${d.loan?`<span>💳 ${fmt(d.loan)}</span>`:''}
+          </div>
+        </div>
+        ${totalSaved?`<div style="font-size:13px;font-weight:600;color:var(--acc)">${fmt(totalSaved)}</div>`:''}
+      </div>`;
+    }).join('');
+  }).catch(err=>{
+    console.error('history:', err);
+    histEl.innerHTML='<div class="empty">שגיאה בטעינה</div>';
+  });
+}
+
+async function saveSummary() {
+  const docId = curY + '_' + String(curM+1).padStart(2,'0');
+  const data = {docId, month: curM, year: curY, updatedAt: firebase.firestore.FieldValue.serverTimestamp()};
+  SAVINGS_FIELDS.forEach(f=>{
+    const val = parseFloat(document.getElementById('sf_'+f.id)?.value||0)||0;
+    data[f.id] = val;
+  });
+  setSyncState('syncing');
+  await SUMMARY_COL.doc(docId).set(data, {merge:true});
+  setSyncState('ok');
+  toast('✓ סיכום חודשי נשמר');
+  renderSummary();
+}
+
+// ── Sub-categories in category view ────────────────────────────────────────
+function getParentCatTotal(catName, expArr) {
+  // sum parent + all sub-cats that belong to it
+  const children = Object.entries(CAT).filter(([k,v])=>v.parent===catName).map(([k])=>k);
+  return expArr.filter(t=>t.cat===catName||children.includes(t.cat)).reduce((s,t)=>s+t.amount,0);
+}
 
 // ── Firestore Listeners ────────────────────────────────────────────────────
 function startListeners() {
